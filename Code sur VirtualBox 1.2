@@ -1,0 +1,44 @@
+<?php
+// Définition des thèmes pour éviter l'erreur d'affichage
+$themes = [
+    ["titre" => "Actualités du cours", "date_derniere" => "10/09/2026 à 16:30", "nb_discussions" => 4],
+    ["titre" => "Aide technique PHP / SQL", "date_derniere" => "09/09/2026 à 14:15", "nb_discussions" => 12],
+    ["titre" => "Projet Forum - Divers", "date_derniere" => "08/09/2026 à 11:00", "nb_discussions" => 7]
+];
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Forum - Accueil</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        .theme-card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .theme-title { font-size: 18px; font-weight: bold; color: #0066cc; text-decoration: none; }
+        .theme-info { font-size: 13px; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Bienvenue sur le Forum</h1>
+    <p>Liste des thèmes ouverts (maximum 5 thèmes par page) :</p>
+
+    <div class="liste-themes">
+        <?php foreach ($themes as $theme): ?>
+            <div class="theme-card">
+                <a href="#" class="theme-title"><?php echo htmlspecialchars($theme['titre']); ?></a>
+                <div class="theme-info">
+                    Dernière discussion : <?php echo $theme['date_derniere']; ?> | 
+                    Nombre de discussions : <?php echo $theme['nb_discussions']; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <div class="pagination" style="margin-top: 20px;">
+        <span>Page : <strong>1</strong> [2] [3]</span>
+    </div>
+
+</body>
+</html>
