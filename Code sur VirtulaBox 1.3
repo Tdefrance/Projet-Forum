@@ -1,0 +1,282 @@
+<?php
+// --- DONNÉES DES THÈMES (1.1) ---
+$themes = [
+    ["id" => 1, "titre" => "Actualités du cours", "date_derniere" => "10/09/2026 à 16:30", "nb_discussions" => 4],
+    ["id" => 2, "titre" => "Aide technique PHP / SQL", "date_derniere" => "09/09/2026 à 14:15", "nb_discussions" => 12],
+    ["id" => 3, "titre" => "Projet Forum - Divers", "date_derniere" => "08/09/2026 à 11:00", "nb_discussions" => 7]
+];
+
+// --- DONNÉES DES DISCUSSIONS PAR THÈME (1.2) ---
+$toutes_les_discussions = [
+    1 => [
+        ["pseudo" => "Alice99", "date_heure" => "10/09/2026 à 16:30", "contenu" => "Bienvenue à tous pour cette rentrée du cours de web !"],
+        ["pseudo" => "BobDEV", "date_heure" => "09/09/2026 à 10:15", "contenu" => "Petite question concernant l'exercice de PHP."],
+        ["pseudo" => "Claire_01", "date_heure" => "08/09/2026 à 14:20", "contenu" => "Quelqu'un a le lien du dépôt GitHub ?"],
+        ["pseudo" => "AdminForum", "date_heure" => "07/09/2026 à 09:00", "contenu" => "Rappel : respectez les règles de politesse."]
+    ],
+    2 => [
+        ["pseudo" => "DevCode", "date_heure" => "09/09/2026 à 14:15", "contenu" => "Comment faire une connexion PDO propre ?"],
+        ["pseudo" => "ProfWeb", "date_heure" => "09/09/2026 à 12:00", "contenu" => "Utilisez bien un bloc try/catch."]
+    ],
+    3 => [
+        ["pseudo" => "User123", "date_heure" => "08/09/2026 à 11:00", "contenu" => "On peut utiliser Bootstrap pour le design ?"]
+    ]
+];
+
+// Simulation de l'authentification (true = connecté, l'ajout s'affiche en haut et en bas)
+$est_authentifie = false;
+
+// Gestion des actions (navigation, inscription)
+$action = isset($_GET['action']) ? $_GET['action'] : null;
+$id_theme_clique = isset($_GET['id']) ? intval($_GET['id']) : null;
+
+$message_erreur = "";
+$message_succes = "";
+
+// Traitement du formulaire d'inscription (Question 1.3)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['inscription_soumise'])) {
+    $email = trim($_POST['email'] ?? '');
+    $pass1 = $_POST['password'] ?? '';
+    $pass2 = $_POST['password_confirm'] ?? '';
+    $pseudo = trim($_POST['pseudo'] ?? '');
+    $captcha = trim($_POST['captcha'] ?? '');
+
+    if (empty($email) || empty($pass1) || empty($pass2) || empty($pseudo) || empty($captcha)) {
+        $message_erreur = "Veuillez remplir tous les champs obligatoires.";
+    } elseif ($pass1 !== $pass2) {
+        $message_erreur = "Les mots de passe ne correspondent pas (double vérification échouée).";
+    } elseif ($captcha !== "42") { // Simulation simple de captcha (ex: 40 + 2 = 42)
+        $message_erreur = "Le code de vérification (Captcha) est incorrect.";
+    } else {
+        // Succès de l'inscription : simulation de l'envoi du mail avec URL valable 1 jour
+        $message_succes = "Inscription réussie ! Un e-mail de confirmation a été envoyé à <strong>" . htmlspecialchars($email) . "</strong> (valable 24h).";
+    }
+}
+
+// Retrouver le titre du thème cliqué si besoin
+$titre_theme_clique = "";
+if ($id_theme_clique !== null) {
+    foreach ($themes as $t) {
+        if ($t['id'] === $id_theme_clique) {
+            $titre_theme_clique = $t['titre'];
+            break;
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Forum - Accueil</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #0066cc; text-decoration: none; font-weight: bold; }
+        .back-link:hover { text-decoration: underline; }
+        
+        /* Styles communs / cartes */
+        .theme-card, .disc-card, .form-card { background: white; padding: 20px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .theme-title { font-size: 18px; font-weight: bold; color: #0066cc; text-decoration: none; }
+        .theme-title:hover { text-decoration: underline; }
+        .theme-info, .disc-header { font-size: 13px; color: #666; margin-top: 5px; }
+        .disc-header { border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 8px; }
+        .disc-content { font-size: 15px; color: #333; }
+
+        /* Boîte d'action (Ajout de discussion) */
+        .action-box { background: #e2e8f0; padding: 12px 15px; border-radius: 5px; margin: 15px 0; }
+        .action-box a { color: #0066cc; text-decoration: none; font-weight: bold; }
+        .action-box a:hover { text-decoration: underline; }
+
+        /* Formulaire d'inscription (1.3) */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .error-msg { background: #ffe6e6; color: #cc0000; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #ff9999; }
+        .success-msg { background: #e6ffcc; color: #006600; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #99ff99; }
+        .btn-submit { background: #0066cc; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-submit:hover { background: #004d99; }
+
+        .top-nav { float: right; }
+        .top-nav a { background: #0066cc; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 14px; }
+
+        /* Pagination */
+        .pagination { margin-top: 20px; font-size: 14px; }
+        .pagination span, .pagination a { margin-right: 5px; padding: 5px 10px; background: white; border: 1px solid #ccc; border-radius: 3px; text-decoration: none; color: #333; }
+        .pagination strong { background: #0066cc; color: white; padding: 5px 10px; border-radius: 3px; border: 1px solid #0066cc; }
+    </style>
+</head>
+<body>
+
+    <?php if ($action === 'inscription'): ?>
+        <!-- ========================================================= -->
+        <!-- 1.3 - FORMULAIRE D'INSCRIPTION                               -->
+        <!-- ========================================================= -->
+        <a href="?" class="back-link">&larr; Retour à la première page</a>
+        <h1>Inscription au Forum</h1>
+        
+        <div class="form-card">
+            <?php if (!empty($message_erreur)): ?>
+                <div class="error-msg"><?php echo $message_erreur; ?></div>
+            <?php endif; ?>
+
+            <?php if (!empty($message_succes)): ?>
+                <div class="success-msg">
+                    <?php echo $message_succes; ?>
+                    <p style="margin-top: 10px;"><a href="?" style="color: #0066cc; font-weight: bold;">Retourner à l'accueil</a></p>
+                </div>
+            <?php else: ?>
+
+                <form method="POST" action="">
+                    <div class="form-group">
+                        <label>E-mail * :</label>
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mot de passe * :</label>
+                        <input type="password" name="password" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Confirmer le mot de passe (double vérification) * :</label>
+                        <input type="password" name="password_confirm" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pseudo * :</label>
+                        <input type="text" name="pseudo" value="<?php echo htmlspecialchars($_POST['pseudo'] ?? ''); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nom (non obligatoire) :</label>
+                        <input type="text" name="nom" value="<?php echo htmlspecialchars($_POST['nom'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Prénom (non obligatoire) :</label>
+                        <input type="text" name="prenom" value="<?php echo htmlspecialchars($_POST['prenom'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Âge (non obligatoire) :</label>
+                        <input type="number" name="age" value="<?php echo htmlspecialchars($_POST['age'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Téléphone (non obligatoire) :</label>
+                        <input type="text" name="telephone" value="<?php echo htmlspecialchars($_POST['telephone'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ville (non obligatoire, avec auto-complétion) :</label>
+                        <input type="text" name="ville" list="villes-sug" value="<?php echo htmlspecialchars($_POST['ville'] ?? ''); ?>" placeholder="Tapez votre ville...">
+                        <datalist id="villes-sug">
+                            <option value="Paris">
+                            <option value="Marseille">
+                            <option value="Lyon">
+                            <option value="Toulouse">
+                            <option value="Nice">
+                            <option value="Nantes">
+                        </datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Captcha - Combien font 40 + 2 ? * :</label>
+                        <input type="text" name="captcha" placeholder="Entrez la réponse" required>
+                    </div>
+
+                    <button type="submit" name="inscription_soumise" class="btn-submit">S'inscrire</button>
+                </form>
+
+            <?php endif; ?>
+        </div>
+
+    <?php elseif ($id_theme_clique === null): ?>
+        <!-- ========================================================= -->
+        <!-- 1.1 - ACCUEIL : Liste des thèmes (max 5 thèmes/page)      -->
+        <!-- ========================================================= -->
+        <div class="top-nav">
+            <a href="?action=inscription">S'inscrire</a>
+        </div>
+
+        <h1>Bienvenue sur le Forum</h1>
+        <p>Liste des thèmes ouverts (maximum 5 thèmes par page) :</p>
+
+        <div class="liste-themes">
+            <?php foreach ($themes as $theme): ?>
+                <div class="theme-card">
+                    <!-- Lien cliquable menant vers la vue du thème (1.2) -->
+                    <a href="?id=<?php echo $theme['id']; ?>" class="theme-title">
+                        <?php echo htmlspecialchars($theme['titre']); ?>
+                    </a>
+                    <div class="theme-info">
+                        Dernière discussion : <?php echo htmlspecialchars($theme['date_derniere']); ?> | 
+                        Nombre de discussions : <?php echo htmlspecialchars($theme['nb_discussions']); ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="pagination">
+            <span>Page : <strong>1</strong> <a href="#">2</a> <a href="#">3</a></span>
+        </div>
+
+    <?php else: ?>
+        <!-- ========================================================= -->
+        <!-- 1.2 - VUE DU THÈME : Liste des discussions (max 10/page)  -->
+        <!-- ========================================================= -->
+        <a href="?" class="back-link">&larr; Retour à la liste des thèmes</a>
+
+        <h1><?php echo htmlspecialchars($titre_theme_clique); ?></h1>
+        <p>Liste des discussions (maximum 10 discussions par page) :</p>
+
+        <!-- 🌐 ACCÈS HAUT DE PAGE : Ajout d'une discussion (si authentifié) -->
+        <?php if ($est_authentifie): ?>
+            <div class="action-box">
+                <a href="ajouter_discussion.php?id=<?php echo $id_theme_clique; ?>">+ Ajouter une discussion</a>
+            </div>
+        <?php endif; ?>
+
+        <!-- 📄 PAGINATION HAUT DE PAGE -->
+        <div class="pagination">
+            <span>Page : <strong>1</strong> <a href="#">2</a></span>
+        </div>
+
+        <div class="liste-discussions" style="margin-top: 15px;">
+            <?php 
+            $discussions = isset($toutes_les_discussions[$id_theme_clique]) ? $toutes_les_discussions[$id_theme_clique] : [];
+            
+            if (empty($discussions)): 
+            ?>
+                <p>Aucune discussion pour le moment dans ce thème.</p>
+            <?php else: ?>
+                <?php foreach ($discussions as $disc): ?>
+                    <div class="disc-card">
+                        <div class="disc-header">
+                            Publié par <strong><?php echo htmlspecialchars($disc['pseudo']); ?></strong> le <?php echo htmlspecialchars($disc['date_heure']); ?>
+                        </div>
+                        <div class="disc-content">
+                            <?php echo htmlspecialchars($disc['contenu']); ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <!-- 📄 PAGINATION BAS DE PAGE -->
+        <div class="pagination">
+            <span>Page : <strong>1</strong> <a href="#">2</a></span>
+        </div>
+
+        <!-- 🌐 ACCÈS BAS DE PAGE : Ajout d'une discussion (si authentifié) -->
+        <?php if ($est_authentifie): ?>
+            <div class="action-box" style="margin-top: 20px;">
+                <a href="ajouter_discussion.php?id=<?php echo $id_theme_clique; ?>">+ Ajouter une discussion</a>
+            </div>
+        <?php endif; ?>
+
+    <?php endif; ?>
+
+</body>
+</html>
